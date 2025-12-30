@@ -6,10 +6,11 @@ from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from .indexer import OllamaEmbedder
+from .indexer import OllamaEmbedder, VaultIndexer
 from .store import VectorStore
 
 # Configuration
+DEFAULT_VAULT_PATH = "/Users/ernestkoe/Documents/Brave Robot"
 DEFAULT_DATA_PATH = "/Users/ernestkoe/Projects/obsidian-memory/data"
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "nomic-embed-text"
@@ -181,6 +182,69 @@ def get_stats() -> dict:
     """
     store = get_store()
     return store.get_stats()
+
+
+@mcp.tool()
+def reindex(clear: bool = False, path_filter: Optional[str] = None) -> dict:
+    """Re-index the Obsidian vault.
+
+    Args:
+        clear: If True, clear existing index before re-indexing (default: False)
+        path_filter: Optional path prefix to limit indexing (e.g., "Daily Notes/")
+
+    Returns:
+        Statistics about the indexing operation
+    """
+    embedder = get_embedder()
+    store = get_store()
+    indexer = VaultIndexer(vault_path=DEFAULT_VAULT_PATH, embedder=embedder)
+
+    if clear:
+        store.clear()
+
+    # Get files to index
+    files = list(indexer.iter_markdown_files())
+
+    # Apply path filter if specified
+    if path_filter:
+        files = [f for f in files if str(f.relative_to(indexer.vault_path)).startswith(path_filter)]
+
+    # Index files
+    chunk_count = 0
+    file_count = 0
+    errors = []
+    batch_chunks = []
+    batch_embeddings = []
+    batch_size = 50
+
+    for file_path in files:
+        try:
+            for chunk, embedding in indexer.index_file(file_path):
+                batch_chunks.append(chunk)
+                batch_embeddings.append(embedding)
+                chunk_count += 1
+
+                if len(batch_chunks) >= batch_size:
+                    store.upsert_batch(batch_chunks, batch_embeddings)
+                    batch_chunks = []
+                    batch_embeddings = []
+
+            file_count += 1
+        except Exception as e:
+            errors.append({"file": str(file_path), "error": str(e)})
+
+    # Insert remaining
+    if batch_chunks:
+        store.upsert_batch(batch_chunks, batch_embeddings)
+
+    return {
+        "files_indexed": file_count,
+        "chunks_created": chunk_count,
+        "total_in_store": store.get_stats()["count"],
+        "errors": errors if errors else None,
+        "path_filter": path_filter,
+        "cleared": clear
+    }
 
 
 def run_server():
