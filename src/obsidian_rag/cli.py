@@ -1,4 +1,4 @@
-"""Command-line interface for obsidian-memory."""
+"""Command-line interface for mcp-obsidianRAG."""
 
 import shutil
 import subprocess
@@ -13,7 +13,7 @@ from .watcher import VaultWatcher
 
 # Default configuration
 DEFAULT_VAULT = "/Users/ernestkoe/Documents/Brave Robot"
-DEFAULT_DATA = "/Users/ernestkoe/Projects/obsidian-memory/data"
+DEFAULT_DATA = "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "nomic-embed-text"
 
@@ -25,7 +25,7 @@ DEFAULT_MODEL = "nomic-embed-text"
 @click.option("--model", default=DEFAULT_MODEL, help="Embedding model name")
 @click.pass_context
 def main(ctx, vault, data, ollama_url, model):
-    """Obsidian Memory - Vector store for your notes."""
+    """Obsidian RAG - Semantic search for your Obsidian vault."""
     ctx.ensure_object(dict)
     ctx.obj["vault"] = vault
     ctx.obj["data"] = data
@@ -185,7 +185,7 @@ def watch(ctx, debounce):
 
 
 # launchd service management
-PLIST_NAME = "com.obsidian-memory.watcher.plist"
+PLIST_NAME = "com.obsidian-rag.watcher.plist"
 LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
 
 
@@ -200,22 +200,22 @@ def _get_plist_content(vault_path: str, data_path: str, ollama_url: str, model: 
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.obsidian-memory.watcher</string>
+    <string>com.obsidian-rag.watcher</string>
     <key>ProgramArguments</key>
     <array>
         <string>{python_path}</string>
         <string>-m</string>
-        <string>obsidian_memory.watcher</string>
+        <string>obsidian_rag.watcher</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>OBSIDIAN_MEMORY_VAULT</key>
+        <key>OBSIDIAN_RAG_VAULT</key>
         <string>{vault_path}</string>
-        <key>OBSIDIAN_MEMORY_DATA</key>
+        <key>OBSIDIAN_RAG_DATA</key>
         <string>{data_path}</string>
-        <key>OBSIDIAN_MEMORY_OLLAMA_URL</key>
+        <key>OBSIDIAN_RAG_OLLAMA_URL</key>
         <string>{ollama_url}</string>
-        <key>OBSIDIAN_MEMORY_MODEL</key>
+        <key>OBSIDIAN_RAG_MODEL</key>
         <string>{model}</string>
     </dict>
     <key>RunAtLoad</key>
@@ -223,9 +223,9 @@ def _get_plist_content(vault_path: str, data_path: str, ollama_url: str, model: 
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/obsidian-memory.log</string>
+    <string>/tmp/obsidian-rag.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/obsidian-memory.err</string>
+    <string>/tmp/obsidian-rag.err</string>
     <key>WorkingDirectory</key>
     <string>{Path.cwd()}</string>
 </dict>
@@ -268,8 +268,8 @@ def install_service(ctx):
         sys.exit(1)
 
     click.echo("Service installed and started.")
-    click.echo("Logs: /tmp/obsidian-memory.log")
-    click.echo("Errors: /tmp/obsidian-memory.err")
+    click.echo("Logs: /tmp/obsidian-rag.log")
+    click.echo("Errors: /tmp/obsidian-rag.err")
 
 
 @main.command("uninstall-service")
@@ -309,7 +309,7 @@ def service_status():
         return
 
     result = subprocess.run(
-        ["launchctl", "list", "com.obsidian-memory.watcher"],
+        ["launchctl", "list", "com.obsidian-rag.watcher"],
         capture_output=True,
         text=True,
     )

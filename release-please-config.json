@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "python",
-      "package-name": "obsidian-memory",
+      "package-name": "mcp-obsidianRAG",
       "bump-minor-pre-major": true,
       "extra-files": [
         {

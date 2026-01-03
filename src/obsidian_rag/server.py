@@ -1,4 +1,4 @@
-"""MCP server for obsidian-memory with semantic search tools."""
+"""MCP server for mcp-obsidianRAG with semantic search tools."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from .store import VectorStore
 
 # Configuration
 DEFAULT_VAULT_PATH = "/Users/ernestkoe/Documents/Brave Robot"
-DEFAULT_DATA_PATH = "/Users/ernestkoe/Projects/obsidian-memory/data"
+DEFAULT_DATA_PATH = "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "nomic-embed-text"
 
 # Create MCP server
-mcp = FastMCP("obsidian-memory")
+mcp = FastMCP("obsidian-rag")
 
 # Global instances (lazy initialized)
 _embedder: Optional[OllamaEmbedder] = None

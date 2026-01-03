@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd plist template for obsidian-memory watcher daemon.
+  launchd plist template for obsidian-rag watcher daemon.
 
   To install manually:
   1. Copy this file to ~/Library/LaunchAgents/
   2. Edit the paths below to match your setup
-  3. Run: launchctl load ~/Library/LaunchAgents/com.obsidian-memory.watcher.plist
+  3. Run: launchctl load ~/Library/LaunchAgents/com.obsidian-rag.watcher.plist
 
   Or use the CLI:
-  uv run obsidian-memory install-service
+  uv run obsidian-rag install-service
 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.obsidian-memory.watcher</string>
+    <string>com.obsidian-rag.watcher</string>
 
     <key>ProgramArguments</key>
     <array>
         <!-- Update this path to your Python executable -->
         <string>/usr/local/bin/python3</string>
         <string>-m</string>
-        <string>obsidian_memory.watcher</string>
+        <string>obsidian_rag.watcher</string>
     </array>
 
     <key>EnvironmentVariables</key>
     <dict>
         <!-- Update these paths to match your setup -->
-        <key>OBSIDIAN_MEMORY_VAULT</key>
+        <key>OBSIDIAN_RAG_VAULT</key>
         <string>/path/to/your/obsidian/vault</string>
-        <key>OBSIDIAN_MEMORY_DATA</key>
-        <string>/path/to/obsidian-memory/data</string>
-        <key>OBSIDIAN_MEMORY_OLLAMA_URL</key>
+        <key>OBSIDIAN_RAG_DATA</key>
+        <string>/path/to/mcp-obsidianRAG/data</string>
+        <key>OBSIDIAN_RAG_OLLAMA_URL</key>
         <string>http://localhost:11434</string>
-        <key>OBSIDIAN_MEMORY_MODEL</key>
+        <key>OBSIDIAN_RAG_MODEL</key>
         <string>nomic-embed-text</string>
     </dict>
 
@@ -44,12 +44,12 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/tmp/obsidian-memory.log</string>
+    <string>/tmp/obsidian-rag.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/obsidian-memory.err</string>
+    <string>/tmp/obsidian-rag.err</string>
 
     <key>WorkingDirectory</key>
-    <string>/path/to/obsidian-memory</string>
+    <string>/path/to/mcp-obsidianRAG</string>
 </dict>
 </plist>

@@ -2,7 +2,7 @@
 
 import pytest
 
-from obsidian_memory.indexer import chunk_by_heading, parse_frontmatter
+from obsidian_rag.indexer import chunk_by_heading, parse_frontmatter
 
 
 class TestParseFrontmatter:

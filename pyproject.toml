@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "obsidian-memory"
+name = "mcp-obsidianRAG"
 version = "0.1.0"
-description = "Vector store for Obsidian notes with MCP server"
+description = "MCP server for semantic search over Obsidian notes using local RAG"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -20,21 +20,23 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ernestkoe/obsidian-memory"
-Repository = "https://github.com/ernestkoe/obsidian-memory"
-Issues = "https://github.com/ernestkoe/obsidian-memory/issues"
+Homepage = "https://github.com/ernestkoe/mcp-obsidianRAG"
+Repository = "https://github.com/ernestkoe/mcp-obsidianRAG"
+Issues = "https://github.com/ernestkoe/mcp-obsidianRAG/issues"
 
 [project.scripts]
-obsidian-memory = "obsidian_memory.cli:main"
-obsidian-memory-mcp = "obsidian_memory.server:run_server"
-obsidian-memory-watch = "obsidian_memory.watcher:run_watcher"
+obsidian-rag = "obsidian_rag.cli:main"
+obsidian-rag-mcp = "obsidian_rag.server:run_server"
 
-[tool.obsidian-memory]
+[tool.obsidian-rag]
 vault_path = "/Users/ernestkoe/Documents/Brave Robot"
 data_path = "./data"
 ollama_url = "http://localhost:11434"
 embedding_model = "nomic-embed-text"
 exclude = ["attachments/**", ".obsidian/**", ".trash/**"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/obsidian_rag"]
 
 [dependency-groups]
 dev = [

@@ -1,8 +1,8 @@
-# Obsidian Memory
+# mcp-obsidianRAG
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Local vector store for Obsidian notes with semantic search via MCP server.
+MCP server for semantic search over Obsidian notes using local RAG (Retrieval-Augmented Generation).
 
 ## Features
 
@@ -22,8 +22,8 @@ Local vector store for Obsidian notes with semantic search via MCP server.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ernestkoe/obsidian-memory.git
-cd obsidian-memory
+git clone https://github.com/ernestkoe/mcp-obsidianRAG.git
+cd mcp-obsidianRAG
 
 # Install with uv
 uv sync
@@ -37,31 +37,31 @@ ollama pull nomic-embed-text
 ### Index your vault
 
 ```bash
-uv run obsidian-memory index
+uv run obsidian-rag index
 ```
 
 ### Search notes
 
 ```bash
-uv run obsidian-memory search "your query"
+uv run obsidian-rag search "your query"
 ```
 
 ### Watch for changes (daemon)
 
 ```bash
-uv run obsidian-memory watch
+uv run obsidian-rag watch
 ```
 
 ### Install as macOS service
 
 ```bash
-uv run obsidian-memory install-service
+uv run obsidian-rag install-service
 ```
 
 ### View statistics
 
 ```bash
-uv run obsidian-memory stats
+uv run obsidian-rag stats
 ```
 
 ## MCP Server
@@ -71,9 +71,9 @@ Add to your Claude Code MCP config:
 ```json
 {
   "mcpServers": {
-    "obsidian-memory": {
+    "obsidian-rag": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/obsidian-memory", "obsidian-memory-mcp"]
+      "args": ["run", "--directory", "/path/to/mcp-obsidianRAG", "obsidian-rag-mcp"]
     }
   }
 }
@@ -94,13 +94,22 @@ Add to your Claude Code MCP config:
 Default configuration is in `pyproject.toml`:
 
 ```toml
-[tool.obsidian-memory]
+[tool.obsidian-rag]
 vault_path = "/path/to/your/vault"
 data_path = "./data"
 ollama_url = "http://localhost:11434"
 embedding_model = "nomic-embed-text"
 exclude = ["attachments/**", ".obsidian/**", ".trash/**"]
 ```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OBSIDIAN_RAG_VAULT` | Path to Obsidian vault |
+| `OBSIDIAN_RAG_DATA` | Path to vector store data |
+| `OBSIDIAN_RAG_OLLAMA_URL` | Ollama API URL |
+| `OBSIDIAN_RAG_MODEL` | Embedding model name |
 
 ## License
 

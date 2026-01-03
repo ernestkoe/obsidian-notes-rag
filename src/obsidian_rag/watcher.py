@@ -20,16 +20,16 @@ from .store import VectorStore
 
 # Configuration defaults (can be overridden by environment variables)
 DEFAULT_VAULT_PATH = os.environ.get(
-    "OBSIDIAN_MEMORY_VAULT", "/Users/ernestkoe/Documents/Brave Robot"
+    "OBSIDIAN_RAG_VAULT", "/Users/ernestkoe/Documents/Brave Robot"
 )
 DEFAULT_DATA_PATH = os.environ.get(
-    "OBSIDIAN_MEMORY_DATA", "/Users/ernestkoe/Projects/obsidian-memory/data"
+    "OBSIDIAN_RAG_DATA", "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
 )
 DEFAULT_OLLAMA_URL = os.environ.get(
-    "OBSIDIAN_MEMORY_OLLAMA_URL", "http://localhost:11434"
+    "OBSIDIAN_RAG_OLLAMA_URL", "http://localhost:11434"
 )
-DEFAULT_MODEL = os.environ.get("OBSIDIAN_MEMORY_MODEL", "nomic-embed-text")
-DEFAULT_DEBOUNCE = float(os.environ.get("OBSIDIAN_MEMORY_DEBOUNCE", "2.0"))
+DEFAULT_MODEL = os.environ.get("OBSIDIAN_RAG_MODEL", "nomic-embed-text")
+DEFAULT_DEBOUNCE = float(os.environ.get("OBSIDIAN_RAG_DEBOUNCE", "2.0"))
 
 logger = logging.getLogger(__name__)
 
