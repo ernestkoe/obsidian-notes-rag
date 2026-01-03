@@ -184,7 +184,9 @@ def watch(ctx, debounce):
     watcher.run_forever()
 
 
-# launchd service management
+# Service management
+# TODO: Add Linux systemd support (create .service file in ~/.config/systemd/user/)
+# TODO: Add Windows Task Scheduler support (use schtasks or win32api)
 PLIST_NAME = "com.obsidian-rag.watcher.plist"
 LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
 
@@ -238,7 +240,8 @@ def _get_plist_content(vault_path: str, data_path: str, ollama_url: str, model: 
 def install_service(ctx):
     """Install launchd service for auto-start on macOS."""
     if sys.platform != "darwin":
-        click.echo("Error: This command is only available on macOS.", err=True)
+        # TODO: Implement Linux systemd and Windows Task Scheduler support
+        click.echo("Error: This command currently only supports macOS. Linux/Windows support planned.", err=True)
         sys.exit(1)
 
     vault_path = ctx.obj["vault"]
@@ -276,7 +279,8 @@ def install_service(ctx):
 def uninstall_service():
     """Uninstall launchd service on macOS."""
     if sys.platform != "darwin":
-        click.echo("Error: This command is only available on macOS.", err=True)
+        # TODO: Implement Linux systemd and Windows Task Scheduler support
+        click.echo("Error: This command currently only supports macOS. Linux/Windows support planned.", err=True)
         sys.exit(1)
 
     plist_path = LAUNCH_AGENTS_DIR / PLIST_NAME
@@ -299,7 +303,8 @@ def uninstall_service():
 def service_status():
     """Check launchd service status on macOS."""
     if sys.platform != "darwin":
-        click.echo("Error: This command is only available on macOS.", err=True)
+        # TODO: Implement Linux systemd and Windows Task Scheduler support
+        click.echo("Error: This command currently only supports macOS. Linux/Windows support planned.", err=True)
         sys.exit(1)
 
     plist_path = LAUNCH_AGENTS_DIR / PLIST_NAME
