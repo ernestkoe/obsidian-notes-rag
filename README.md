@@ -18,17 +18,25 @@ Ask natural language questions about your notes:
 
 ## Quick Start
 
+The easiest way to get started is with [uvx](https://docs.astral.sh/uv/guides/tools/) (no installation required):
+
 ```bash
-# Clone and install
+# Run the setup wizard
+uvx mcp-obsidianrag setup
+
+# Add to Claude Code
+claude mcp add obsidian-rag -- uvx mcp-obsidianrag serve
+```
+
+### Alternative: Clone and install
+
+```bash
 git clone https://github.com/ernestkoe/mcp-obsidianRAG.git
 cd mcp-obsidianRAG
 uv sync
 
-# Run the setup wizard
 uv run obsidian-rag setup
-
-# Add to Claude Code
-claude mcp add obsidian-rag -- uv run --directory /path/to/mcp-obsidianRAG obsidian-rag-mcp
+claude mcp add obsidian-rag -- uv run --directory /path/to/mcp-obsidianRAG obsidian-rag serve
 ```
 
 The setup wizard will:
@@ -92,6 +100,7 @@ uv run obsidian-rag install-service
 
 ```bash
 obsidian-rag setup                # Interactive setup wizard
+obsidian-rag serve                # Start MCP server (for Claude Code)
 obsidian-rag index [--clear]      # Index vault (--clear to rebuild)
 obsidian-rag search "query"       # Search from command line
 obsidian-rag watch                # Watch for file changes

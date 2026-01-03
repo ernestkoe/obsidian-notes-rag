@@ -28,8 +28,8 @@ Repository = "https://github.com/ernestkoe/mcp-obsidianRAG"
 Issues = "https://github.com/ernestkoe/mcp-obsidianRAG/issues"
 
 [project.scripts]
+mcp-obsidianrag = "obsidian_rag.cli:main"
 obsidian-rag = "obsidian_rag.cli:main"
-obsidian-rag-mcp = "obsidian_rag.server:run_server"
 
 [tool.obsidian-rag]
 vault_path = "/Users/ernestkoe/Documents/Brave Robot"

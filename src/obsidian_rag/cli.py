@@ -10,6 +10,7 @@ import click
 
 from .config import Config, load_config, save_config, get_config_path, get_data_dir
 from .indexer import create_embedder, VaultIndexer
+from .server import run_server
 from .store import VectorStore
 from .watcher import VaultWatcher
 
@@ -327,6 +328,12 @@ def watch(ctx, debounce):
         debounce_delay=debounce,
     )
     watcher.run_forever()
+
+
+@main.command()
+def serve():
+    """Start the MCP server (for Claude Code integration)."""
+    run_server()
 
 
 # Service management
