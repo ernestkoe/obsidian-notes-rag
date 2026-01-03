@@ -22,10 +22,10 @@ The easiest way to get started is with [uvx](https://docs.astral.sh/uv/guides/to
 
 ```bash
 # Run the setup wizard
-uvx mcp-obsidianrag setup
+uvx obsidian-rag setup
 
 # Add to Claude Code
-claude mcp add obsidian-rag -- uvx mcp-obsidianrag serve
+claude mcp add obsidian-rag -- uvx obsidian-rag serve
 ```
 
 ### Alternative: Clone and install
