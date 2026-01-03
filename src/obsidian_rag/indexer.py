@@ -125,8 +125,31 @@ def _generate_chunk_id(file_path: str, heading: Optional[str], content: str, chu
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
+class OpenAIEmbedder:
+    """Generate embeddings using OpenAI API."""
+
+    def __init__(self, model: str = "text-embedding-3-small"):
+        from openai import OpenAI
+        self.client = OpenAI()  # Uses OPENAI_API_KEY env var
+        self.model = model
+
+    def embed(self, text: str) -> List[float]:
+        """Generate embedding for a single text."""
+        response = self.client.embeddings.create(input=text, model=self.model)
+        return response.data[0].embedding
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for multiple texts."""
+        response = self.client.embeddings.create(input=texts, model=self.model)
+        return [item.embedding for item in response.data]
+
+    def close(self):
+        """Close the client (no-op for OpenAI)."""
+        pass
+
+
 class OllamaEmbedder:
-    """Generate embeddings using Ollama."""
+    """Generate embeddings using Ollama (local)."""
 
     def __init__(
         self,
@@ -152,7 +175,43 @@ class OllamaEmbedder:
         return [self.embed(text) for text in texts]
 
     def close(self):
+        """Close the HTTP client."""
         self.client.close()
+
+
+# Type alias for embedder
+Embedder = OpenAIEmbedder | OllamaEmbedder
+
+
+def create_embedder(
+    provider: str = "openai",
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Embedder:
+    """Create an embedder instance for the specified provider.
+
+    Args:
+        provider: "openai" or "ollama"
+        model: Model name (defaults to provider's default)
+        base_url: Base URL for Ollama (ignored for OpenAI)
+
+    Returns:
+        An embedder instance
+    """
+    if provider == "openai":
+        kwargs = {}
+        if model:
+            kwargs["model"] = model
+        return OpenAIEmbedder(**kwargs)
+    elif provider == "ollama":
+        kwargs = {}
+        if model:
+            kwargs["model"] = model
+        if base_url:
+            kwargs["base_url"] = base_url
+        return OllamaEmbedder(**kwargs)
+    else:
+        raise ValueError(f"Unknown provider: {provider}. Use 'openai' or 'ollama'.")
 
 
 class VaultIndexer:
@@ -161,7 +220,7 @@ class VaultIndexer:
     def __init__(
         self,
         vault_path,
-        embedder: OllamaEmbedder,
+        embedder: Embedder,
         exclude_patterns: Optional[List[str]] = None
     ):
         self.vault_path = Path(vault_path)

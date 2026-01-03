@@ -2,114 +2,138 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-MCP server for semantic search over Obsidian notes using local RAG (Retrieval-Augmented Generation).
+MCP server for semantic search over your Obsidian vault. Uses OpenAI embeddings by default (or Ollama for local processing) with ChromaDB for vector storage.
 
-## Features
+## What it does
 
-- Semantic search across your Obsidian vault
-- ChromaDB-backed vector storage
-- Local embeddings via Ollama (nomic-embed-text)
-- MCP server for AI assistant integration
-- File watcher daemon for auto-indexing
+Ask natural language questions about your notes:
+- "What did I write about project planning?"
+- "Find notes similar to my meeting notes from last week"
+- "What's in my daily notes about the API refactor?"
 
 ## Requirements
 
 - Python 3.11+
-- [Ollama](https://ollama.ai/) with `nomic-embed-text` model
-- [uv](https://github.com/astral-sh/uv) (recommended)
+- `OPENAI_API_KEY` environment variable (or [Ollama](https://ollama.ai/) for local embeddings)
 
-## Installation
+## Quick Start
 
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/ernestkoe/mcp-obsidianRAG.git
 cd mcp-obsidianRAG
-
-# Install with uv
 uv sync
 
-# Pull the embedding model
-ollama pull nomic-embed-text
+# Run the setup wizard
+uv run obsidian-rag setup
+
+# Add to Claude Code
+claude mcp add obsidian-rag -- uv run --directory /path/to/mcp-obsidianRAG obsidian-rag-mcp
 ```
 
-## Usage
+The setup wizard will:
+1. Ask for your embedding provider (OpenAI or Ollama)
+2. Configure your API key (for OpenAI)
+3. Set your Obsidian vault path
+4. Choose where to store the search index
+5. Optionally run the initial indexing
 
-### Index your vault
+### Manual Setup (alternative)
+
+```bash
+# Set your API key and index directly
+export OPENAI_API_KEY=sk-...
+uv run obsidian-rag index --vault /path/to/your/vault
+```
+
+### Using Ollama (local, offline)
+
+```bash
+# Install Ollama and pull the embedding model
+ollama pull nomic-embed-text
+
+# Run setup with Ollama, or index directly:
+uv run obsidian-rag --provider ollama index --vault /path/to/your/vault
+```
+
+## MCP Tools
+
+Once connected, these tools are available to Claude:
+
+| Tool | What it does |
+|------|--------------|
+| `search_notes` | Find notes matching a query |
+| `get_similar` | Find notes similar to a given note |
+| `get_note_context` | Get a note with related context |
+| `get_stats` | Show index statistics |
+| `reindex` | Update the index |
+
+## Keeping the Index Fresh
+
+### Option 1: Manual reindex
 
 ```bash
 uv run obsidian-rag index
 ```
 
-### Search notes
-
-```bash
-uv run obsidian-rag search "your query"
-```
-
-### Watch for changes (daemon)
+### Option 2: Watch for changes
 
 ```bash
 uv run obsidian-rag watch
 ```
 
-### Install as macOS service
+### Option 3: Auto-start on login (macOS)
 
 ```bash
 uv run obsidian-rag install-service
 ```
 
-### View statistics
+## CLI Reference
 
 ```bash
-uv run obsidian-rag stats
+obsidian-rag setup                # Interactive setup wizard
+obsidian-rag index [--clear]      # Index vault (--clear to rebuild)
+obsidian-rag search "query"       # Search from command line
+obsidian-rag watch                # Watch for file changes
+obsidian-rag stats                # Show index stats
+obsidian-rag install-service      # Install macOS launchd service
+obsidian-rag uninstall-service    # Remove service
+obsidian-rag service-status       # Check service status
 ```
-
-## MCP Server
-
-Add to your Claude Code MCP config:
-
-```json
-{
-  "mcpServers": {
-    "obsidian-rag": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/mcp-obsidianRAG", "obsidian-rag-mcp"]
-    }
-  }
-}
-```
-
-### Available Tools
-
-| Tool | Description |
-|------|-------------|
-| `search_notes` | Semantic search with optional type filter |
-| `get_similar` | Find notes similar to a given note |
-| `get_note_context` | Get note content plus related context |
-| `get_stats` | Collection statistics |
-| `reindex` | Re-index vault (with optional clear and path filter) |
 
 ## Configuration
 
-Default configuration is in `pyproject.toml`:
+Set your vault path and provider via CLI options or environment variables:
 
-```toml
-[tool.obsidian-rag]
-vault_path = "/path/to/your/vault"
-data_path = "./data"
-ollama_url = "http://localhost:11434"
-embedding_model = "nomic-embed-text"
-exclude = ["attachments/**", ".obsidian/**", ".trash/**"]
+```bash
+# CLI options
+uv run obsidian-rag --vault /path/to/vault index
+uv run obsidian-rag --provider ollama index
+
+# Environment variables
+export OBSIDIAN_RAG_VAULT=/path/to/vault
+export OBSIDIAN_RAG_PROVIDER=ollama  # or "openai" (default)
 ```
-
-### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
+| `OPENAI_API_KEY` | OpenAI API key (required for default provider) |
+| `OBSIDIAN_RAG_PROVIDER` | Embedding provider: `openai` (default) or `ollama` |
 | `OBSIDIAN_RAG_VAULT` | Path to Obsidian vault |
-| `OBSIDIAN_RAG_DATA` | Path to vector store data |
-| `OBSIDIAN_RAG_OLLAMA_URL` | Ollama API URL |
-| `OBSIDIAN_RAG_MODEL` | Embedding model name |
+| `OBSIDIAN_RAG_DATA` | Where to store the index (default: `./data`) |
+| `OBSIDIAN_RAG_OLLAMA_URL` | Ollama API URL (default: `http://localhost:11434`) |
+| `OBSIDIAN_RAG_MODEL` | Override embedding model |
+
+## How it works
+
+1. Parses your markdown files and splits them by headings
+2. Generates embeddings using OpenAI API (or Ollama for local processing)
+3. Stores vectors in ChromaDB (local, persistent)
+4. MCP server provides semantic search to Claude
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
 
 ## License
 

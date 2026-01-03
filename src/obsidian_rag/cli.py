@@ -1,5 +1,6 @@
 """Command-line interface for mcp-obsidianRAG."""
 
+import os
 import shutil
 import subprocess
 import sys
@@ -7,30 +8,168 @@ from pathlib import Path
 
 import click
 
-from .indexer import OllamaEmbedder, VaultIndexer
+from .config import Config, load_config, save_config, get_config_path, get_data_dir
+from .indexer import create_embedder, VaultIndexer
 from .store import VectorStore
 from .watcher import VaultWatcher
 
 # Default configuration
 DEFAULT_VAULT = "/Users/ernestkoe/Documents/Brave Robot"
 DEFAULT_DATA = "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
+DEFAULT_PROVIDER = "openai"
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
-DEFAULT_MODEL = "nomic-embed-text"
 
 
 @click.group()
-@click.option("--vault", default=DEFAULT_VAULT, help="Path to Obsidian vault")
-@click.option("--data", default=str(DEFAULT_DATA), help="Path to vector store data")
-@click.option("--ollama-url", default=DEFAULT_OLLAMA_URL, help="Ollama API URL")
-@click.option("--model", default=DEFAULT_MODEL, help="Embedding model name")
+@click.option("--vault", default=None, help="Path to Obsidian vault")
+@click.option("--data", default=None, help="Path to vector store data")
+@click.option("--provider", default=None,
+              type=click.Choice(["openai", "ollama"]),
+              help="Embedding provider (default: openai)")
+@click.option("--ollama-url", default=None,
+              help="Ollama API URL (only used with --provider ollama)")
+@click.option("--model", default=None, help="Override embedding model name")
 @click.pass_context
-def main(ctx, vault, data, ollama_url, model):
+def main(ctx, vault, data, provider, ollama_url, model):
     """Obsidian RAG - Semantic search for your Obsidian vault."""
     ctx.ensure_object(dict)
-    ctx.obj["vault"] = vault
-    ctx.obj["data"] = data
-    ctx.obj["ollama_url"] = ollama_url
-    ctx.obj["model"] = model
+
+    # Load config from file, then apply CLI overrides
+    config = load_config()
+
+    ctx.obj["vault"] = vault or config.vault_path or DEFAULT_VAULT
+    ctx.obj["data"] = data or config.get_data_path()
+    ctx.obj["provider"] = provider or config.provider
+    ctx.obj["ollama_url"] = ollama_url or config.ollama_url
+    ctx.obj["model"] = model  # None means use provider default
+    ctx.obj["config"] = config
+
+
+@main.command()
+def setup():
+    """Interactive setup wizard for obsidian-rag."""
+    click.echo("\nWelcome to Obsidian RAG setup!\n")
+
+    # Check for existing config
+    config_path = get_config_path()
+    if config_path.exists():
+        if not click.confirm(f"Config already exists at {config_path}. Overwrite?"):
+            click.echo("Setup cancelled.")
+            return
+
+    config = Config()
+
+    # 1. Select provider
+    click.echo("Select embedding provider:")
+    click.echo("  1. OpenAI (recommended - requires API key)")
+    click.echo("  2. Ollama (local, offline)")
+    provider_choice = click.prompt("Choice", type=click.Choice(["1", "2"]), default="1")
+    config.provider = "openai" if provider_choice == "1" else "ollama"
+
+    # 2. Provider-specific setup
+    if config.provider == "openai":
+        # Check for existing API key
+        existing_key = os.environ.get("OPENAI_API_KEY")
+        if existing_key:
+            click.echo(f"\n✓ Found OPENAI_API_KEY in environment")
+            if not click.confirm("Save API key to config file?", default=False):
+                config.openai_api_key = None
+            else:
+                config.openai_api_key = existing_key
+        else:
+            click.echo("\nNo OPENAI_API_KEY found in environment.")
+            api_key = click.prompt("Enter your OpenAI API key", hide_input=True)
+            config.openai_api_key = api_key
+    else:
+        # Ollama setup
+        ollama_url = click.prompt(
+            "\nOllama API URL",
+            default="http://localhost:11434"
+        )
+        config.ollama_url = ollama_url
+
+    # 3. Vault path
+    while True:
+        vault_path = click.prompt("\nPath to your Obsidian vault")
+        vault_path = os.path.expanduser(vault_path)
+        if Path(vault_path).exists():
+            md_files = list(Path(vault_path).rglob("*.md"))
+            click.echo(f"✓ Vault found ({len(md_files)} markdown files)")
+            config.vault_path = vault_path
+            break
+        else:
+            click.echo(f"✗ Directory not found: {vault_path}")
+            if not click.confirm("Try again?", default=True):
+                click.echo("Setup cancelled.")
+                return
+
+    # 4. Data directory
+    default_data = str(get_data_dir())
+    data_path = click.prompt(
+        "\nWhere to store the search index?",
+        default=default_data
+    )
+    data_path = os.path.expanduser(data_path)
+    config.data_path = data_path
+
+    # 5. Save config
+    saved_path = save_config(config)
+    click.echo(f"\n✓ Configuration saved to {saved_path}")
+
+    # 6. Offer to run initial index
+    if click.confirm("\nRun initial indexing now?", default=True):
+        click.echo("\nIndexing vault...")
+        try:
+            # Create embedder based on provider
+            if config.provider == "openai":
+                # Set API key in environment for OpenAI client
+                if config.openai_api_key:
+                    os.environ["OPENAI_API_KEY"] = config.openai_api_key
+                embedder = create_embedder(provider="openai")
+            else:
+                embedder = create_embedder(
+                    provider="ollama",
+                    base_url=config.ollama_url
+                )
+
+            store = VectorStore(data_path=config.data_path)
+            indexer = VaultIndexer(vault_path=config.vault_path, embedder=embedder)
+
+            files = list(indexer.iter_markdown_files())
+            chunk_count = 0
+            batch_chunks = []
+            batch_embeddings = []
+            batch_size = 50
+
+            with click.progressbar(files, label="Indexing") as bar:
+                for file_path in bar:
+                    try:
+                        for chunk, embedding in indexer.index_file(file_path):
+                            batch_chunks.append(chunk)
+                            batch_embeddings.append(embedding)
+                            chunk_count += 1
+
+                            if len(batch_chunks) >= batch_size:
+                                store.upsert_batch(batch_chunks, batch_embeddings)
+                                batch_chunks = []
+                                batch_embeddings = []
+                    except Exception as e:
+                        click.echo(f"\n  Error: {file_path}: {e}", err=True)
+
+            if batch_chunks:
+                store.upsert_batch(batch_chunks, batch_embeddings)
+
+            embedder.close()
+            click.echo(f"\n✓ Indexed {chunk_count} chunks from {len(files)} files")
+
+        except Exception as e:
+            click.echo(f"\n✗ Indexing failed: {e}", err=True)
+            click.echo("You can run indexing later with: obsidian-rag index")
+
+    click.echo("\nSetup complete! You can now:")
+    click.echo("  - Search: obsidian-rag search \"your query\"")
+    click.echo("  - Add to Claude Code: claude mcp add obsidian-rag -- \\")
+    click.echo(f"      uv run --directory {Path.cwd()} obsidian-rag-mcp")
 
 
 @main.command()
@@ -40,14 +179,16 @@ def index(ctx, clear):
     """Index all markdown files in the vault."""
     vault_path = ctx.obj["vault"]
     data_path = ctx.obj["data"]
+    provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
     model = ctx.obj["model"]
 
     click.echo(f"Indexing vault: {vault_path}")
     click.echo(f"Data path: {data_path}")
+    click.echo(f"Provider: {provider}")
 
     # Initialize components
-    embedder = OllamaEmbedder(base_url=ollama_url, model=model)
+    embedder = create_embedder(provider=provider, model=model, base_url=ollama_url)
     store = VectorStore(data_path=data_path)
     indexer = VaultIndexer(vault_path=vault_path, embedder=embedder)
 
@@ -100,11 +241,12 @@ def index(ctx, clear):
 def search(ctx, query, limit, note_type):
     """Search notes semantically."""
     data_path = ctx.obj["data"]
+    provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
     model = ctx.obj["model"]
 
     # Initialize components
-    embedder = OllamaEmbedder(base_url=ollama_url, model=model)
+    embedder = create_embedder(provider=provider, model=model, base_url=ollama_url)
     store = VectorStore(data_path=data_path)
 
     # Generate query embedding
@@ -166,17 +308,20 @@ def watch(ctx, debounce):
     """Watch vault for changes and auto-reindex."""
     vault_path = ctx.obj["vault"]
     data_path = ctx.obj["data"]
+    provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
     model = ctx.obj["model"]
 
     click.echo(f"Watching vault: {vault_path}")
     click.echo(f"Data path: {data_path}")
+    click.echo(f"Provider: {provider}")
     click.echo(f"Debounce: {debounce}s")
     click.echo("Press Ctrl+C to stop.\n")
 
     watcher = VaultWatcher(
         vault_path=vault_path,
         data_path=data_path,
+        provider=provider,
         ollama_url=ollama_url,
         model=model,
         debounce_delay=debounce,
@@ -191,11 +336,29 @@ PLIST_NAME = "com.obsidian-rag.watcher.plist"
 LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
 
 
-def _get_plist_content(vault_path: str, data_path: str, ollama_url: str, model: str) -> str:
+def _get_plist_content(vault_path: str, data_path: str, provider: str, ollama_url: str, model: str | None) -> str:
     """Generate launchd plist content."""
     # Find the obsidian-memory-watch executable
     import sys
     python_path = sys.executable
+
+    # Build environment variables section
+    env_vars = f"""        <key>OBSIDIAN_RAG_VAULT</key>
+        <string>{vault_path}</string>
+        <key>OBSIDIAN_RAG_DATA</key>
+        <string>{data_path}</string>
+        <key>OBSIDIAN_RAG_PROVIDER</key>
+        <string>{provider}</string>"""
+
+    if provider == "ollama":
+        env_vars += f"""
+        <key>OBSIDIAN_RAG_OLLAMA_URL</key>
+        <string>{ollama_url}</string>"""
+
+    if model:
+        env_vars += f"""
+        <key>OBSIDIAN_RAG_MODEL</key>
+        <string>{model}</string>"""
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -211,14 +374,7 @@ def _get_plist_content(vault_path: str, data_path: str, ollama_url: str, model: 
     </array>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>OBSIDIAN_RAG_VAULT</key>
-        <string>{vault_path}</string>
-        <key>OBSIDIAN_RAG_DATA</key>
-        <string>{data_path}</string>
-        <key>OBSIDIAN_RAG_OLLAMA_URL</key>
-        <string>{ollama_url}</string>
-        <key>OBSIDIAN_RAG_MODEL</key>
-        <string>{model}</string>
+{env_vars}
     </dict>
     <key>RunAtLoad</key>
     <true/>
@@ -246,6 +402,7 @@ def install_service(ctx):
 
     vault_path = ctx.obj["vault"]
     data_path = ctx.obj["data"]
+    provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
     model = ctx.obj["model"]
 
@@ -260,7 +417,7 @@ def install_service(ctx):
         subprocess.run(["launchctl", "unload", str(plist_path)], capture_output=True)
 
     # Write plist
-    plist_content = _get_plist_content(vault_path, data_path, ollama_url, model)
+    plist_content = _get_plist_content(vault_path, data_path, provider, ollama_url, model)
     plist_path.write_text(plist_content)
     click.echo(f"Created: {plist_path}")
 

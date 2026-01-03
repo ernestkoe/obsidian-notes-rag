@@ -15,20 +15,20 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 
-from .indexer import OllamaEmbedder, VaultIndexer
+from .config import load_config
+from .indexer import create_embedder, Embedder, VaultIndexer
 from .store import VectorStore
 
-# Configuration defaults (can be overridden by environment variables)
-DEFAULT_VAULT_PATH = os.environ.get(
-    "OBSIDIAN_RAG_VAULT", "/Users/ernestkoe/Documents/Brave Robot"
+# Load config for defaults
+_config = load_config()
+
+DEFAULT_VAULT_PATH = _config.vault_path or os.environ.get(
+    "OBSIDIAN_RAG_VAULT", ""
 )
-DEFAULT_DATA_PATH = os.environ.get(
-    "OBSIDIAN_RAG_DATA", "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
-)
-DEFAULT_OLLAMA_URL = os.environ.get(
-    "OBSIDIAN_RAG_OLLAMA_URL", "http://localhost:11434"
-)
-DEFAULT_MODEL = os.environ.get("OBSIDIAN_RAG_MODEL", "nomic-embed-text")
+DEFAULT_DATA_PATH = _config.get_data_path()
+DEFAULT_PROVIDER = _config.provider
+DEFAULT_OLLAMA_URL = _config.ollama_url
+DEFAULT_MODEL: Optional[str] = None  # Use provider default
 DEFAULT_DEBOUNCE = float(os.environ.get("OBSIDIAN_RAG_DEBOUNCE", "2.0"))
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class NoteEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         vault_path: Path,
-        embedder: OllamaEmbedder,
+        embedder: Embedder,
         store: VectorStore,
         debounce_delay: float = 2.0,
         exclude_patterns: Optional[list[str]] = None,
@@ -216,12 +216,18 @@ class VaultWatcher:
         self,
         vault_path: str = DEFAULT_VAULT_PATH,
         data_path: str = DEFAULT_DATA_PATH,
+        provider: str = DEFAULT_PROVIDER,
         ollama_url: str = DEFAULT_OLLAMA_URL,
-        model: str = DEFAULT_MODEL,
+        model: Optional[str] = DEFAULT_MODEL,
         debounce_delay: float = DEFAULT_DEBOUNCE,
     ):
         self.vault_path = Path(vault_path)
-        self.embedder = OllamaEmbedder(base_url=ollama_url, model=model)
+
+        # Set OpenAI API key from config if needed
+        if provider == "openai" and _config.openai_api_key:
+            os.environ["OPENAI_API_KEY"] = _config.openai_api_key
+
+        self.embedder = create_embedder(provider=provider, model=model, base_url=ollama_url)
         self.store = VectorStore(data_path=data_path)
         self.debounce_delay = debounce_delay
 
@@ -296,8 +302,9 @@ class VaultWatcher:
 def run_watcher(
     vault_path: str = DEFAULT_VAULT_PATH,
     data_path: str = DEFAULT_DATA_PATH,
+    provider: str = DEFAULT_PROVIDER,
     ollama_url: str = DEFAULT_OLLAMA_URL,
-    model: str = DEFAULT_MODEL,
+    model: Optional[str] = DEFAULT_MODEL,
     debounce: float = DEFAULT_DEBOUNCE,
 ):
     """Run the vault watcher (entry point for CLI)."""
@@ -311,6 +318,7 @@ def run_watcher(
     watcher = VaultWatcher(
         vault_path=vault_path,
         data_path=data_path,
+        provider=provider,
         ollama_url=ollama_url,
         model=model,
         debounce_delay=debounce,

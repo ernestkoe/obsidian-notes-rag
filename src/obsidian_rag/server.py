@@ -2,34 +2,44 @@
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
 
-from .indexer import OllamaEmbedder, VaultIndexer
+from .config import load_config, Config
+from .indexer import create_embedder, Embedder, VaultIndexer
 from .store import VectorStore
-
-# Configuration
-DEFAULT_VAULT_PATH = "/Users/ernestkoe/Documents/Brave Robot"
-DEFAULT_DATA_PATH = "/Users/ernestkoe/Projects/mcp-obsidianRAG/data"
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
-DEFAULT_MODEL = "nomic-embed-text"
 
 # Create MCP server
 mcp = FastMCP("obsidian-rag")
 
 # Global instances (lazy initialized)
-_embedder: Optional[OllamaEmbedder] = None
+_config: Optional[Config] = None
+_embedder: Optional[Embedder] = None
 _store: Optional[VectorStore] = None
 
 
-def get_embedder() -> OllamaEmbedder:
+def get_config() -> Config:
+    """Get or create config instance."""
+    global _config
+    if _config is None:
+        _config = load_config()
+    return _config
+
+
+def get_embedder() -> Embedder:
     """Get or create embedder instance."""
     global _embedder
     if _embedder is None:
-        _embedder = OllamaEmbedder(
-            base_url=DEFAULT_OLLAMA_URL,
-            model=DEFAULT_MODEL
+        config = get_config()
+        # Set API key in environment if configured
+        if config.provider == "openai" and config.openai_api_key:
+            os.environ["OPENAI_API_KEY"] = config.openai_api_key
+        _embedder = create_embedder(
+            provider=config.provider,
+            model=config.openai_model if config.provider == "openai" else config.ollama_model,
+            base_url=config.ollama_url,
         )
     return _embedder
 
@@ -38,7 +48,8 @@ def get_store() -> VectorStore:
     """Get or create store instance."""
     global _store
     if _store is None:
-        _store = VectorStore(data_path=DEFAULT_DATA_PATH)
+        config = get_config()
+        _store = VectorStore(data_path=config.get_data_path())
     return _store
 
 
@@ -195,9 +206,14 @@ def reindex(clear: bool = False, path_filter: Optional[str] = None) -> dict:
     Returns:
         Statistics about the indexing operation
     """
+    config = get_config()
     embedder = get_embedder()
     store = get_store()
-    indexer = VaultIndexer(vault_path=DEFAULT_VAULT_PATH, embedder=embedder)
+
+    if not config.vault_path:
+        return {"error": "No vault path configured. Run 'obsidian-rag setup' first."}
+
+    indexer = VaultIndexer(vault_path=config.vault_path, embedder=embedder)
 
     if clear:
         store.clear()
