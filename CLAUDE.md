@@ -19,19 +19,19 @@ uv sync --dev
 .venv/bin/python -m pyright
 
 # Interactive setup wizard
-uv run obsidian-rag setup
+uv run obsidian-notes-rag setup
 
 # Index vault (manual refresh)
-uv run obsidian-rag index
+uv run obsidian-notes-rag index
 
 # Run the MCP server (stdio transport)
-uv run obsidian-rag serve
+uv run obsidian-notes-rag serve
 
 # Watch vault for changes
-uv run obsidian-rag watch
+uv run obsidian-notes-rag watch
 
 # Search from CLI
-uv run obsidian-rag search "query"
+uv run obsidian-notes-rag search "query"
 ```
 
 ## Architecture
