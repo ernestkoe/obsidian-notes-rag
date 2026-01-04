@@ -23,9 +23,27 @@ The easiest way to get started is with [uvx](https://docs.astral.sh/uv/guides/to
 ```bash
 # Run the setup wizard
 uvx obsidian-notes-rag setup
+```
 
-# Add to Claude Code
-claude mcp add obsidian-notes-rag -- uvx obsidian-notes-rag serve
+### Add to Claude Code (CLI)
+
+```bash
+claude mcp add -s user obsidian-notes-rag -- uvx obsidian-notes-rag serve
+```
+
+### Add to Claude Desktop (JSON config)
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "obsidian-notes-rag": {
+      "command": "uvx",
+      "args": ["obsidian-notes-rag", "serve"]
+    }
+  }
+}
 ```
 
 ### Alternative: Clone and install
@@ -36,7 +54,7 @@ cd obsidian-rag
 uv sync
 
 uv run obsidian-notes-rag setup
-claude mcp add obsidian-notes-rag -- uv run --directory /path/to/obsidian-rag obsidian-notes-rag serve
+claude mcp add -s user obsidian-notes-rag -- uv run --directory /path/to/obsidian-rag obsidian-notes-rag serve
 ```
 
 The setup wizard will:
