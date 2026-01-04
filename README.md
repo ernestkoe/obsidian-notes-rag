@@ -22,10 +22,10 @@ The easiest way to get started is with [uvx](https://docs.astral.sh/uv/guides/to
 
 ```bash
 # Run the setup wizard
-uvx obsidian-rag setup
+uvx obsidian-notes-rag setup
 
 # Add to Claude Code
-claude mcp add obsidian-rag -- uvx obsidian-rag serve
+claude mcp add obsidian-notes-rag -- uvx obsidian-notes-rag serve
 ```
 
 ### Alternative: Clone and install
@@ -35,8 +35,8 @@ git clone https://github.com/ernestkoe/obsidian-rag.git
 cd obsidian-rag
 uv sync
 
-uv run obsidian-rag setup
-claude mcp add obsidian-rag -- uv run --directory /path/to/obsidian-rag obsidian-rag serve
+uv run obsidian-notes-rag setup
+claude mcp add obsidian-notes-rag -- uv run --directory /path/to/obsidian-rag obsidian-notes-rag serve
 ```
 
 The setup wizard will:
@@ -51,7 +51,7 @@ The setup wizard will:
 ```bash
 # Set your API key and index directly
 export OPENAI_API_KEY=sk-...
-uv run obsidian-rag index --vault /path/to/your/vault
+uv run obsidian-notes-rag index --vault /path/to/your/vault
 ```
 
 ### Using Ollama (local, offline)
@@ -61,7 +61,7 @@ uv run obsidian-rag index --vault /path/to/your/vault
 ollama pull nomic-embed-text
 
 # Run setup with Ollama, or index directly:
-uv run obsidian-rag --provider ollama index --vault /path/to/your/vault
+uv run obsidian-notes-rag --provider ollama index --vault /path/to/your/vault
 ```
 
 ## MCP Tools
@@ -81,33 +81,33 @@ Once connected, these tools are available to Claude:
 ### Option 1: Manual reindex
 
 ```bash
-uv run obsidian-rag index
+uv run obsidian-notes-rag index
 ```
 
 ### Option 2: Watch for changes
 
 ```bash
-uv run obsidian-rag watch
+uv run obsidian-notes-rag watch
 ```
 
 ### Option 3: Auto-start on login (macOS)
 
 ```bash
-uv run obsidian-rag install-service
+uv run obsidian-notes-rag install-service
 ```
 
 ## CLI Reference
 
 ```bash
-obsidian-rag setup                # Interactive setup wizard
-obsidian-rag serve                # Start MCP server (for Claude Code)
-obsidian-rag index [--clear]      # Index vault (--clear to rebuild)
-obsidian-rag search "query"       # Search from command line
-obsidian-rag watch                # Watch for file changes
-obsidian-rag stats                # Show index stats
-obsidian-rag install-service      # Install macOS launchd service
-obsidian-rag uninstall-service    # Remove service
-obsidian-rag service-status       # Check service status
+obsidian-notes-rag setup                # Interactive setup wizard
+obsidian-notes-rag serve                # Start MCP server (for Claude Code)
+obsidian-notes-rag index [--clear]      # Index vault (--clear to rebuild)
+obsidian-notes-rag search "query"       # Search from command line
+obsidian-notes-rag watch                # Watch for file changes
+obsidian-notes-rag stats                # Show index stats
+obsidian-notes-rag install-service      # Install macOS launchd service
+obsidian-notes-rag uninstall-service    # Remove service
+obsidian-notes-rag service-status       # Check service status
 ```
 
 ## Configuration
@@ -116,8 +116,8 @@ Set your vault path and provider via CLI options or environment variables:
 
 ```bash
 # CLI options
-uv run obsidian-rag --vault /path/to/vault index
-uv run obsidian-rag --provider ollama index
+uv run obsidian-notes-rag --vault /path/to/vault index
+uv run obsidian-notes-rag --provider ollama index
 
 # Environment variables
 export OBSIDIAN_RAG_VAULT=/path/to/vault
