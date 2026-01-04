@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/ernestkoe/obsidian-rag/compare/v0.1.0...v0.1.1) (2026-01-04)
+
+
+### Bug Fixes
+
+* add manual trigger to release workflow ([130dfd0](https://github.com/ernestkoe/obsidian-rag/commit/130dfd0cfddce817863998042ee783791b8204a9))
+
 ## 0.1.0 (2026-01-03)
 
 
