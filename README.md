@@ -1,7 +1,6 @@
-# obsidian-notes-rag
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ernestkoe)
+
+# obsidian-notes-rag
 
 MCP server for semantic search over your Obsidian vault. Uses OpenAI embeddings by default (or Ollama for local processing) with ChromaDB for vector storage.
 
@@ -162,6 +161,9 @@ export OBSIDIAN_RAG_PROVIDER=ollama  # or "openai" (default)
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup.
+
+## Support
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ernestkoe)
 
 ## License
 
