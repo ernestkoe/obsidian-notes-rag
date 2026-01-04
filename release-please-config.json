@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "python",
-      "package-name": "obsidian-rag",
+      "package-name": "obsidian-notes-rag",
       "bump-minor-pre-major": true,
       "extra-files": [
         {
