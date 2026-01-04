@@ -1,4 +1,4 @@
-"""Command-line interface for obsidian-rag."""
+"""Command-line interface for obsidian-notes-rag."""
 
 import logging
 import os
@@ -21,7 +21,7 @@ from .watcher import VaultWatcher
 
 # Default configuration
 DEFAULT_VAULT = "/Users/ernestkoe/Documents/Brave Robot"
-DEFAULT_DATA = "/Users/ernestkoe/Projects/obsidian-rag/data"
+DEFAULT_DATA = "/Users/ernestkoe/Projects/obsidian-notes-rag/data"
 DEFAULT_PROVIDER = "openai"
 DEFAULT_OLLAMA_URL = "http://localhost:11434"
 
@@ -53,7 +53,7 @@ def main(ctx, vault, data, provider, ollama_url, model):
 
 @main.command()
 def setup():
-    """Interactive setup wizard for obsidian-rag."""
+    """Interactive setup wizard for obsidian-notes-rag."""
     click.echo("\nWelcome to Obsidian RAG setup!\n")
 
     # Check for existing config
@@ -344,7 +344,7 @@ def serve():
 # Service management
 # TODO: Add Linux systemd support (create .service file in ~/.config/systemd/user/)
 # TODO: Add Windows Task Scheduler support (use schtasks or win32api)
-PLIST_NAME = "com.obsidian-rag.watcher.plist"
+PLIST_NAME = "com.obsidian-notes-rag.watcher.plist"
 LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
 
 
@@ -377,7 +377,7 @@ def _get_plist_content(vault_path: str, data_path: str, provider: str, ollama_ur
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.obsidian-rag.watcher</string>
+    <string>com.obsidian-notes-rag.watcher</string>
     <key>ProgramArguments</key>
     <array>
         <string>{python_path}</string>
@@ -393,9 +393,9 @@ def _get_plist_content(vault_path: str, data_path: str, provider: str, ollama_ur
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/obsidian-rag.log</string>
+    <string>/tmp/obsidian-notes-rag.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/obsidian-rag.err</string>
+    <string>/tmp/obsidian-notes-rag.err</string>
     <key>WorkingDirectory</key>
     <string>{Path.cwd()}</string>
 </dict>
@@ -440,8 +440,8 @@ def install_service(ctx):
         sys.exit(1)
 
     click.echo("Service installed and started.")
-    click.echo("Logs: /tmp/obsidian-rag.log")
-    click.echo("Errors: /tmp/obsidian-rag.err")
+    click.echo("Logs: /tmp/obsidian-notes-rag.log")
+    click.echo("Errors: /tmp/obsidian-notes-rag.err")
 
 
 @main.command("uninstall-service")
@@ -483,7 +483,7 @@ def service_status():
         return
 
     result = subprocess.run(
-        ["launchctl", "list", "com.obsidian-rag.watcher"],
+        ["launchctl", "list", "com.obsidian-notes-rag.watcher"],
         capture_output=True,
         text=True,
     )
