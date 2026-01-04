@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-obsidian-rag is an MCP (Model Context Protocol) server that provides semantic search over Obsidian notes. It uses OpenAI embeddings by default (or Ollama for local processing) with ChromaDB for vector storage.
+obsidian-notes-rag is an MCP (Model Context Protocol) server that provides semantic search over Obsidian notes. It uses OpenAI embeddings by default (or Ollama for local processing) with ChromaDB for vector storage.
+
+**PyPI:** https://pypi.org/project/obsidian-notes-rag/
 
 ## Commands
 
@@ -13,10 +15,10 @@ obsidian-rag is an MCP (Model Context Protocol) server that provides semantic se
 uv sync --dev
 
 # Run tests
-.venv/bin/python -m pytest -v
+uv run pytest -v
 
 # Type checking
-.venv/bin/python -m pyright
+uv run pyright
 
 # Interactive setup wizard
 uv run obsidian-notes-rag setup
