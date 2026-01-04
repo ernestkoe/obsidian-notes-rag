@@ -170,12 +170,12 @@ def setup():
 
         except Exception as e:
             click.echo(f"\n✗ Indexing failed: {e}", err=True)
-            click.echo("You can run indexing later with: obsidian-rag index")
+            click.echo("You can run indexing later with: obsidian-notes-rag index")
 
     click.echo("\nSetup complete! You can now:")
-    click.echo("  - Search: obsidian-rag search \"your query\"")
-    click.echo("  - Add to Claude Code: claude mcp add obsidian-rag -- \\")
-    click.echo(f"      uv run --directory {Path.cwd()} obsidian-rag-mcp")
+    click.echo("  - Search: obsidian-notes-rag search \"your query\"")
+    click.echo("  - Add to Claude Code:")
+    click.echo("      claude mcp add -s user obsidian-notes-rag -- uvx obsidian-notes-rag serve")
 
 
 @main.command()
