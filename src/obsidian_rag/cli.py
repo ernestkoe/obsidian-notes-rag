@@ -1,5 +1,6 @@
 """Command-line interface for obsidian-rag."""
 
+import logging
 import os
 import shutil
 import subprocess
@@ -7,6 +8,10 @@ import sys
 from pathlib import Path
 
 import click
+
+# Suppress noisy HTTP logs from httpx/openai during progress bars
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
 
 from .config import Config, load_config, save_config, get_config_path, get_data_dir
 from .indexer import create_embedder, VaultIndexer
