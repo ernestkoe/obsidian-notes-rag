@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "obsidian-notes-rag"
-version = "0.2.2"
+version = "0.2.3"
 description = "MCP server for semantic search over Obsidian notes using local RAG"
 readme = "README.md"
 requires-python = ">=3.11"

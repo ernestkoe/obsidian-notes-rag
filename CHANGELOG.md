@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/ernestkoe/obsidian-notes-rag/compare/v0.2.2...v0.2.3) (2026-01-04)
+
+
+### Bug Fixes
+
+* update launchd service name to obsidian-notes-rag ([1ba651a](https://github.com/ernestkoe/obsidian-notes-rag/commit/1ba651a54b8d0de8116051c1320fd3f06cd2f4c3))
+
 ## [0.2.2](https://github.com/ernestkoe/obsidian-notes-rag/compare/v0.2.1...v0.2.2) (2026-01-04)
 
 
