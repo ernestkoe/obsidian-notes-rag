@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/ernestkoe/obsidian-rag/compare/v0.1.1...v0.1.2) (2026-01-04)
+
+
+### Bug Fixes
+
+* disable attestations for token-based auth ([8d70f98](https://github.com/ernestkoe/obsidian-rag/commit/8d70f989f3e50c7d9f6a5f045d0cc767646c0686))
+* use API token for PyPI publish ([51a2c09](https://github.com/ernestkoe/obsidian-rag/commit/51a2c0958e226b128a2a34c9ec0a8e2c75102a93))
+
 ## [0.1.1](https://github.com/ernestkoe/obsidian-rag/compare/v0.1.0...v0.1.1) (2026-01-04)
 
 
