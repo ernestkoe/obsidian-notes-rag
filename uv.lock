@@ -6,6 +6,10 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
+[options]
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P14D"
+
 [[package]]
 name = "annotated-types"
 version = "0.7.0"
@@ -531,7 +535,7 @@ wheels = [
 
 [[package]]
 name = "obsidian-notes-rag"
-version = "0.4.2"
+version = "1.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "chonkie" },
@@ -558,7 +562,7 @@ requires-dist = [
     { name = "chonkie", specifier = ">=1.0.0" },
     { name = "click", specifier = ">=8.0.0" },
     { name = "httpx", specifier = ">=0.25.0" },
-    { name = "mcp", specifier = ">=1.0.0" },
+    { name = "mcp", specifier = ">=1.0.0,<2.0.0" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "platformdirs", specifier = ">=3.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
