@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Surface dependency updates (including new majors like mcp 2.0) as PRs
+  # so CI runs the test suite against them instead of fresh installs
+  # discovering breakage at runtime.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

@@ -5,14 +5,14 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from .config import load_config, Config
 from .indexer import create_embedder, Embedder, VaultIndexer
 from .store import VectorStore
 
 # Create MCP server
-mcp = FastMCP("obsidian-rag")
+mcp = MCPServer("obsidian-rag")
 
 # Global instances (lazy initialized)
 _config: Optional[Config] = None

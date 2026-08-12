@@ -46,7 +46,7 @@ obsidian-rag context "Path/To/Note.md"
 ```
 Obsidian Vault → VaultIndexer → Embedder (OpenAI/Ollama/LMStudio) → VectorStore (sqlite-vec)
                                                                           ↓
-MCP Client ← FastMCP Server ← search_notes/get_similar/etc.
+MCP Client ← MCPServer (mcp 2.x) ← search_notes/get_similar/etc.
 ```
 
 ### Key Components (src/obsidian_rag/)
@@ -54,7 +54,7 @@ MCP Client ← FastMCP Server ← search_notes/get_similar/etc.
 - **config.py**: `Config` dataclass, `load_config()`/`save_config()` for TOML config file, cross-platform paths via `platformdirs`
 - **indexer.py**: `VaultIndexer` scans markdown files, `chunk_markdown()` uses Chonkie RecursiveChunker with markdown-aware rules, `OpenAIEmbedder`/`OllamaEmbedder`/`LMStudioEmbedder` generate embeddings, `create_embedder()` factory selects provider
 - **store.py**: `VectorStore` wraps sqlite-vec with KNN vector search, two tables (chunks metadata + chunks_vec virtual table), handles upsert/delete by file path. Thread-safe (`check_same_thread=False` + `threading.Lock`).
-- **server.py**: FastMCP server exposing 5 tools: `search_notes`, `get_similar`, `get_note_context`, `get_stats`, `reindex`
+- **server.py**: MCPServer (mcp 2.x decorator API, successor to FastMCP) exposing 5 tools: `search_notes`, `get_similar`, `get_note_context`, `get_stats`, `reindex`
 - **watcher.py**: `VaultWatcher` uses watchdog with debouncing (default 2s) to incrementally re-index on file changes
 - **cli.py**: Click-based CLI with `setup` wizard, `--provider` option, commands for indexing, searching, similar, context, watching, and service management
 
