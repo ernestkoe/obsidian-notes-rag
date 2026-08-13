@@ -1,6 +1,45 @@
 # CHANGELOG
 
 
+## v1.2.0 (2026-08-13)
+
+### Features
+
+- Graph-aware retrieval over the vault's link graph
+  ([`04a82ef`](https://github.com/proofsh/obsidian-notes-rag/commit/04a82ef6543dfead7da813a88b190d28c4a7760b))
+
+Indexing now extracts every wikilink and markdown link between notes into a local links table (fast
+  pass, no LLM), kept fresh by the watcher and reindex. At query time:
+
+- search --expand N / search_notes(expand=N) append notes within N link/backlink hops of the vector
+  hits, BFS order, capped, with the bridging note reported - context / get_note_context include the
+  note's links and backlinks - new graph command and get_note_graph MCP tool show a note's
+  link-graph neighborhood - stats reports edge count
+
+Entity-anchored retrieval in the style of graph-RAG local search, at zero extra indexing cost and
+  fully local.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01GAFiWzgBHE96jXW4EmGvRV
+
+- Migrate MCP server to mcp 2.0
+  ([`a71fb93`](https://github.com/proofsh/obsidian-notes-rag/commit/a71fb93c7f5e6a01b50812f7937fc15e6165c6e6))
+
+Replace the removed mcp.server.fastmcp.FastMCP with mcp.server.MCPServer (the 2.0 successor; the
+  decorator API is unchanged) and bump the dependency to mcp>=2.0.0,<3.0.0.
+
+Durability work alongside the migration: - tests/test_server.py exercises the server over the real
+  MCP protocol via the SDK's in-process client: import regression, tool registration, and result
+  serialization for all five tools. The mcp 2.0 breakage was invisible to CI precisely because
+  nothing tested server.py. - Dependabot config so future dependency majors arrive as PRs where CI
+  runs the suite, rather than breaking fresh installs at runtime.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01JZUD32SFzHDnV8cvU8BubN
+
+
 ## v1.1.3 (2026-08-12)
 
 ### Bug Fixes
