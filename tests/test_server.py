@@ -21,7 +21,7 @@ from obsidian_rag.config import Config
 from obsidian_rag.indexer import IndexerConfig
 
 
-EXPECTED_TOOLS = {"search_notes", "get_similar", "get_note_context", "get_stats", "reindex"}
+EXPECTED_TOOLS = {"search_notes", "get_similar", "get_note_context", "get_note_graph", "get_stats", "reindex"}
 
 
 class FakeEmbedder:
@@ -38,10 +38,11 @@ class FakeEmbedder:
 class FakeStore:
     """Canned-response store that records search calls."""
 
-    def __init__(self, search_results=None, files=None, stats=None):
+    def __init__(self, search_results=None, files=None, stats=None, links=None):
         self.search_results = search_results or []
         self.files = files or {}
         self.stats = stats or {"count": 0}
+        self.links = links or {}  # source -> [targets]
         self.search_calls = []
 
     def search(self, embedding, limit=5, where=None):
@@ -50,6 +51,12 @@ class FakeStore:
 
     def get_by_file(self, file_path):
         return self.files.get(file_path, [])
+
+    def get_links(self, file_path):
+        return list(self.links.get(file_path, []))
+
+    def get_backlinks(self, file_path):
+        return [src for src, targets in self.links.items() if file_path in targets]
 
     def get_stats(self):
         return self.stats
@@ -204,6 +211,35 @@ async def test_get_note_context_combines_chunks_and_similar(fakes):
     assert ctx["file_path"] == "Notes/source.md"
     assert ctx["content"] == "chunk one\n\nchunk two"
     assert [n["file_path"] for n in ctx["similar_notes"]] == ["Notes/other.md"]
+
+
+@pytest.mark.anyio
+async def test_get_note_graph_links_and_backlinks(fakes):
+    _, _, store = fakes
+    store.files = {"Notes/a.md": [make_result("Notes/a.md", "content", 0.0)]}
+    store.links = {"Notes/a.md": ["Notes/b.md"], "Notes/c.md": ["Notes/a.md"]}
+    async with Client(server.mcp) as client:
+        result = await client.call_tool("get_note_graph", {"note_path": "Notes/a.md"})
+
+    graph = text_result(result)
+    assert graph["links"] == ["Notes/b.md"]
+    assert graph["backlinks"] == ["Notes/c.md"]
+
+
+@pytest.mark.anyio
+async def test_search_notes_expand_appends_graph_neighbors(fakes):
+    _, _, store = fakes
+    store.search_results = [make_result("Notes/a.md", "hit", distance=0.2)]
+    store.links = {"Notes/a.md": ["Notes/b.md"]}
+    store.files = {"Notes/b.md": [make_result("Notes/b.md", "neighbor content", 0.0)]}
+    async with Client(server.mcp) as client:
+        result = await client.call_tool("search_notes", {"query": "q", "expand": 1})
+
+    results = structured_list(result)
+    graph_entries = [r for r in results if r.get("source") == "graph"]
+    assert [r["file_path"] for r in graph_entries] == ["Notes/b.md"]
+    assert graph_entries[0]["via"] == "Notes/a.md"
+    assert graph_entries[0]["direction"] == "link"
 
 
 @pytest.mark.anyio

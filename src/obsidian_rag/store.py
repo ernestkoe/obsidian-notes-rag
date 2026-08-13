@@ -58,6 +58,17 @@ class VectorStore:
             CREATE INDEX IF NOT EXISTS idx_chunks_file_path
             ON chunks(file_path)
         """)
+        self.db.execute("""
+            CREATE TABLE IF NOT EXISTS links (
+                source_path TEXT NOT NULL,
+                target_path TEXT NOT NULL,
+                PRIMARY KEY (source_path, target_path)
+            )
+        """)
+        self.db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_links_target
+            ON links(target_path)
+        """)
         self.db.commit()
 
     def _try_load_vec_table(self) -> None:
@@ -128,7 +139,7 @@ class VectorStore:
             self.db.commit()
 
     def delete_by_file(self, file_path: str) -> None:
-        """Delete all chunks from a specific file."""
+        """Delete all chunks (and outgoing links) from a specific file."""
         with self._lock:
             ids = [row[0] for row in
                    self.db.execute("SELECT id FROM chunks WHERE file_path = ?", (file_path,)).fetchall()]
@@ -136,7 +147,40 @@ class VectorStore:
                 placeholders = ",".join("?" * len(ids))
                 self.db.execute(f"DELETE FROM chunks_vec WHERE id IN ({placeholders})", ids)
                 self.db.execute(f"DELETE FROM chunks WHERE id IN ({placeholders})", ids)
-                self.db.commit()
+            self.db.execute("DELETE FROM links WHERE source_path = ?", (file_path,))
+            self.db.commit()
+
+    def replace_links(self, source_path: str, target_paths: Sequence[str]) -> None:
+        """Replace all outgoing links for a source note."""
+        with self._lock:
+            self.db.execute("DELETE FROM links WHERE source_path = ?", (source_path,))
+            self.db.executemany(
+                "INSERT OR IGNORE INTO links (source_path, target_path) VALUES (?, ?)",
+                [(source_path, t) for t in target_paths],
+            )
+            self.db.commit()
+
+    def get_links(self, file_path: str) -> List[str]:
+        """Notes this note links to."""
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT target_path FROM links WHERE source_path = ?", (file_path,)
+            ).fetchall()
+            return [row[0] for row in rows]
+
+    def get_backlinks(self, file_path: str) -> List[str]:
+        """Notes that link to this note."""
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT source_path FROM links WHERE target_path = ?", (file_path,)
+            ).fetchall()
+            return [row[0] for row in rows]
+
+    def get_link_stats(self) -> dict:
+        """Edge count for stats display."""
+        with self._lock:
+            count = self.db.execute("SELECT COUNT(*) FROM links").fetchone()[0]
+            return {"links": count}
 
     def search(
         self,
@@ -228,6 +272,7 @@ class VectorStore:
         """Clear all data."""
         with self._lock:
             self.db.execute("DELETE FROM chunks")
+            self.db.execute("DELETE FROM links")
             if self._dim is not None:
                 self.db.execute("DROP TABLE IF EXISTS chunks_vec")
                 self._dim = None

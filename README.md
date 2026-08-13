@@ -95,10 +95,14 @@ The rule should describe when to use each command (`search`, `similar`, `context
 obsidian-rag search "query"                  # semantic search
 obsidian-rag search "standup" --type daily   # filter by note type
 obsidian-rag search "design" -n 10           # more results
+obsidian-rag search "design" --expand 1      # + notes linked from the hits
+obsidian-rag search "design" -e 2 --expand-limit 15  # deeper graph context
 
 # Explore
-obsidian-rag similar "Path/To/Note.md"       # find related notes
-obsidian-rag context "Path/To/Note.md"       # show note + related context
+obsidian-rag similar "Path/To/Note.md"       # find related notes (by meaning)
+obsidian-rag context "Path/To/Note.md"       # note + links/backlinks + similar
+obsidian-rag graph "Path/To/Note.md"         # link-graph neighborhood
+obsidian-rag graph "Path/To/Note.md" -n 2    # traverse two hops
 
 # Index
 obsidian-rag index                            # re-index vault
@@ -122,11 +126,23 @@ Once connected, your AI assistant has access to:
 
 | Tool | What it does |
 |------|--------------|
-| `search_notes` | Find notes matching a query |
+| `search_notes` | Find notes matching a query; `expand` adds link-graph neighbors |
 | `get_similar` | Find notes similar to a given note |
-| `get_note_context` | Get a note with related context |
+| `get_note_context` | Get a note with its links, backlinks, and similar notes |
+| `get_note_graph` | Get a note's link-graph neighborhood |
 | `get_stats` | Show index statistics |
-| `reindex` | Rebuild the index |
+| `reindex` | Rebuild the index (chunks and link graph) |
+
+## Graph-Aware Retrieval
+
+Your vault's links already form a knowledge graph. Indexing extracts every
+wikilink and markdown link between notes into a local edge table (no LLM
+involved), and `--expand` / `get_note_graph` traverse it at query time:
+a vector search finds the notes that *sound like* your query, then expansion
+follows real links outward for the connected context — the entity-anchored
+retrieval that graph-RAG systems promise, at zero extra indexing cost.
+Traversal is breadth-first (both links and backlinks), never revisits a
+note, and reports which note bridged each hop.
 
 ## Keeping the Index Fresh
 

@@ -15,9 +15,28 @@ logging.getLogger("openai").setLevel(logging.WARNING)
 
 from .config import Config, load_config, save_config, get_config_path, get_data_dir
 from .indexer import create_embedder, VaultIndexer, is_ollama_running, get_ollama_models, is_lmstudio_running, get_lmstudio_models
+from .links import expand_neighbors
 from .server import run_server
 from .store import VectorStore
 from .watcher import VaultWatcher
+
+
+def _store_link_graph(indexer: VaultIndexer, store: VectorStore) -> int:
+    """Extract and persist the vault's link graph; returns edge count."""
+    edge_count = 0
+    for source, targets in indexer.link_graph().items():
+        store.replace_links(source, sorted(targets))
+        edge_count += len(targets)
+    return edge_count
+
+
+def _note_preview(store: VectorStore, path: str, max_len: int = 200) -> str:
+    """First-chunk preview for a note, or a placeholder if unindexed."""
+    chunks = store.get_by_file(path)
+    if not chunks:
+        return "(not indexed)"
+    content = chunks[0]["content"]
+    return content[:max_len] + "..." if len(content) > max_len else content
 
 # Default configuration
 DEFAULT_VAULT = "/Users/ernestkoe/Documents/Brave Robot"
@@ -279,7 +298,8 @@ def setup():
                 store.upsert_batch(batch_chunks, batch_embeddings)
 
             embedder.close()
-            click.echo(f"\n✓ Indexed {chunk_count} chunks from {len(files)} files")
+            edge_count = _store_link_graph(indexer, store)
+            click.echo(f"\n✓ Indexed {chunk_count} chunks from {len(files)} files ({edge_count} link edges)")
 
         except Exception as e:
             click.echo(f"\n✗ Indexing failed: {e}", err=True)
@@ -421,7 +441,11 @@ def index(ctx, clear, path_filter):
 
     embedder.close()
 
+    click.echo("Extracting link graph...")
+    edge_count = _store_link_graph(indexer, store)
+
     click.echo(f"\nIndexed {chunk_count} chunks from {len(files)} files")
+    click.echo(f"Stored {edge_count} link edges")
     click.echo(f"Total documents in store: {store.get_stats()['count']}")
 
 
@@ -429,8 +453,10 @@ def index(ctx, clear, path_filter):
 @click.argument("query")
 @click.option("--limit", "-n", default=5, help="Number of results")
 @click.option("--type", "note_type", default=None, help="Filter by type (daily, note)")
+@click.option("--expand", "-e", default=0, help="Expand results N hops along the vault's link graph")
+@click.option("--expand-limit", default=10, help="Max graph neighbors to include (default: 10)")
 @click.pass_context
-def search(ctx, query, limit, note_type):
+def search(ctx, query, limit, note_type, expand, expand_limit):
     """Search notes semantically."""
     data_path = ctx.obj["data"]
     provider = ctx.obj["provider"]
@@ -500,6 +526,21 @@ def search(ctx, query, limit, note_type):
             content = content[:300] + "..."
         click.echo(f"    {content}")
         click.echo()
+
+    # Graph expansion: follow the vault's actual links out from the hits
+    if expand > 0:
+        seeds = list(dict.fromkeys(r["metadata"]["file_path"] for r in results))
+        neighbors = expand_neighbors(store, seeds, hops=expand, limit=expand_limit)
+        if neighbors:
+            click.echo(f"{'═' * 60}")
+            click.echo(f"Graph context ({len(neighbors)} notes within {expand} hop{'s' if expand > 1 else ''})")
+            click.echo(f"{'═' * 60}")
+            for i, nb in enumerate(neighbors, 1):
+                arrow = "→" if nb.direction == "link" else "←"
+                click.echo(f"[{i}] {nb.path}")
+                click.echo(f"    hop {nb.hop} {arrow} via {nb.via} ({nb.direction})")
+                click.echo(f"    {_note_preview(store, nb.path)}")
+                click.echo()
 
     embedder.close()
 
@@ -627,6 +668,19 @@ def context(ctx, note_path, limit):
     click.echo(note_content)
     click.echo()
 
+    # Graph neighbors: the note's actual links and backlinks
+    links = store.get_links(note_path)
+    backlinks = store.get_backlinks(note_path)
+    if links or backlinks:
+        click.echo(f"{'─' * 60}")
+        click.echo(f"Linked Notes ({len(links)} links, {len(backlinks)} backlinks)")
+        click.echo(f"{'─' * 60}")
+        for target in sorted(links):
+            click.echo(f"  → {target}")
+        for source in sorted(backlinks):
+            click.echo(f"  ← {source}")
+        click.echo()
+
     # Find similar notes
     note_embedding = embedder.embed(note_content[:8000])
     all_results = store.search(note_embedding, limit=limit + 10)
@@ -650,6 +704,44 @@ def context(ctx, note_path, limit):
 
 
 @main.command()
+@click.argument("note_path")
+@click.option("--hops", "-n", default=1, help="Traversal depth (default: 1)")
+@click.option("--limit", default=20, help="Max neighbors to show (default: 20)")
+@click.pass_context
+def graph(ctx, note_path, hops, limit):
+    """Show a note's link-graph neighborhood (links and backlinks)."""
+    data_path = ctx.obj["data"]
+    store = VectorStore(data_path=data_path)
+
+    links = store.get_links(note_path)
+    backlinks = store.get_backlinks(note_path)
+
+    if not links and not backlinks and not store.get_by_file(note_path):
+        click.echo(f"Note not found in index: {note_path}")
+        return
+
+    click.echo(f"{'═' * 60}")
+    click.echo(f"Graph neighborhood: {note_path}")
+    click.echo(f"{'═' * 60}")
+    click.echo(f"\nLinks ({len(links)}):")
+    for target in sorted(links):
+        click.echo(f"  → {target}")
+    click.echo(f"\nBacklinks ({len(backlinks)}):")
+    for source in sorted(backlinks):
+        click.echo(f"  ← {source}")
+
+    if hops > 1:
+        neighbors = expand_neighbors(store, [note_path], hops=hops, limit=limit)
+        beyond = [nb for nb in neighbors if nb.hop > 1]
+        if beyond:
+            click.echo(f"\nBeyond 1 hop ({len(beyond)}):")
+            for nb in beyond:
+                arrow = "→" if nb.direction == "link" else "←"
+                click.echo(f"  hop {nb.hop} {arrow} {nb.path} (via {nb.via})")
+    click.echo()
+
+
+@main.command()
 @click.pass_context
 def stats(ctx):
     """Show index statistics."""
@@ -659,6 +751,7 @@ def stats(ctx):
     stats = store.get_stats()
     click.echo(f"Collection: {stats['collection']}")
     click.echo(f"Documents: {stats['count']}")
+    click.echo(f"Link edges: {store.get_link_stats()['links']}")
     click.echo(f"Data path: {stats['data_path']}")
 
 

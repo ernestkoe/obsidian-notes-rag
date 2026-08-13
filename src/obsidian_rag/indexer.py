@@ -612,3 +612,32 @@ class VaultIndexer:
                     yield chunk, embedding
             except Exception as e:
                 print(f"Error indexing {file_path}: {e}")
+
+    def build_resolver(self) -> "LinkResolver":
+        """Build a link resolver over the vault's current markdown files."""
+        from .links import LinkResolver
+        return LinkResolver(
+            str(p.relative_to(self.vault_path)) for p in self.iter_markdown_files()
+        )
+
+    def file_links(self, file_path: Path, resolver: Optional["LinkResolver"] = None) -> set:
+        """Extract resolved outgoing links from one file (no embedding work)."""
+        from .links import extract_links
+        if resolver is None:
+            resolver = self.build_resolver()
+        content = file_path.read_text(encoding="utf-8")
+        rel_path = str(file_path.relative_to(self.vault_path))
+        _, body = parse_frontmatter(content)
+        return extract_links(body, rel_path, resolver)
+
+    def link_graph(self) -> Dict[str, set]:
+        """Extract the vault's full link graph in one fast pass (no embeddings)."""
+        resolver = self.build_resolver()
+        graph: Dict[str, set] = {}
+        for file_path in self.iter_markdown_files():
+            rel_path = str(file_path.relative_to(self.vault_path))
+            try:
+                graph[rel_path] = self.file_links(file_path, resolver)
+            except Exception:
+                graph[rel_path] = set()
+        return graph

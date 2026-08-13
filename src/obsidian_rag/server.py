@@ -9,6 +9,7 @@ from mcp.server import MCPServer
 
 from .config import load_config, Config
 from .indexer import create_embedder, Embedder, VaultIndexer
+from .links import expand_neighbors
 from .store import VectorStore
 
 # Create MCP server
@@ -73,17 +74,22 @@ def get_store() -> VectorStore:
 def search_notes(
     query: str,
     limit: Optional[int] = None,
-    note_type: Optional[str] = None
+    note_type: Optional[str] = None,
+    expand: int = 0,
 ) -> list[dict]:
-    """Search notes using semantic similarity.
+    """Search notes using semantic similarity, optionally expanding along the link graph.
 
     Args:
         query: Search query text
         limit: Maximum number of results (default: from config)
         note_type: Optional filter - "daily" or "note"
+        expand: If > 0, also return notes within this many link/backlink hops
+            of the vector hits (marked with source: "graph")
 
     Returns:
-        List of matching notes with content, file path, and similarity score
+        List of matching notes with content, file path, and similarity score.
+        With expand > 0, graph neighbors follow the vector hits, carrying
+        hop/via/direction instead of a similarity score.
     """
     config = get_config()
     embedder = get_embedder()
@@ -106,7 +112,7 @@ def search_notes(
     threshold = config.indexer.similarity_threshold
 
     # Format results
-    return [
+    formatted = [
         {
             "file_path": r["metadata"]["file_path"],
             "heading": r["metadata"].get("heading") or None,
@@ -117,6 +123,22 @@ def search_notes(
         for r in results
         if threshold <= 0 or (1 - r["distance"]) >= threshold
     ]
+
+    if expand > 0 and formatted:
+        seeds = list(dict.fromkeys(r["file_path"] for r in formatted))
+        for nb in expand_neighbors(store, seeds, hops=expand, limit=limit * 2):
+            chunks = store.get_by_file(nb.path)
+            preview = chunks[0]["content"][:500] if chunks else ""
+            formatted.append({
+                "file_path": nb.path,
+                "content": preview,
+                "source": "graph",
+                "hop": nb.hop,
+                "via": nb.via,
+                "direction": nb.direction,
+            })
+
+    return formatted
 
 
 @mcp.tool()
@@ -203,8 +225,45 @@ def get_note_context(note_path: str, limit: Optional[int] = None) -> dict:
     return {
         "file_path": note_path,
         "content": note_content,
+        "links": store.get_links(note_path),
+        "backlinks": store.get_backlinks(note_path),
         "similar_notes": similar if not (similar and "error" in similar[0]) else []
     }
+
+
+@mcp.tool()
+def get_note_graph(note_path: str, hops: int = 1, limit: int = 20) -> dict:
+    """Get a note's link-graph neighborhood (links, backlinks, and optionally further hops).
+
+    Args:
+        note_path: Path to the note (relative to vault root)
+        hops: Traversal depth (default: 1)
+        limit: Max neighbors when traversing beyond one hop (default: 20)
+
+    Returns:
+        The note's outgoing links, incoming backlinks, and any further-hop
+        neighbors with the path that led to them
+    """
+    store = get_store()
+
+    links = store.get_links(note_path)
+    backlinks = store.get_backlinks(note_path)
+
+    if not links and not backlinks and not store.get_by_file(note_path):
+        return {"error": f"Note not found: {note_path}"}
+
+    result = {
+        "file_path": note_path,
+        "links": sorted(links),
+        "backlinks": sorted(backlinks),
+    }
+    if hops > 1:
+        result["beyond_one_hop"] = [
+            {"file_path": nb.path, "hop": nb.hop, "via": nb.via, "direction": nb.direction}
+            for nb in expand_neighbors(store, [note_path], hops=hops, limit=limit)
+            if nb.hop > 1
+        ]
+    return result
 
 
 @mcp.tool()
@@ -276,9 +335,16 @@ def reindex(clear: bool = False, path_filter: Optional[str] = None) -> dict:
     if batch_chunks:
         store.upsert_batch(batch_chunks, batch_embeddings)
 
+    # Refresh the link graph (fast pass, no embeddings)
+    edge_count = 0
+    for source, targets in indexer.link_graph().items():
+        store.replace_links(source, sorted(targets))
+        edge_count += len(targets)
+
     return {
         "files_indexed": file_count,
         "chunks_created": chunk_count,
+        "link_edges": edge_count,
         "total_in_store": store.get_stats()["count"],
         "errors": errors if errors else None,
         "path_filter": path_filter,
