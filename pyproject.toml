@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "obsidian-notes-rag"
-version = "1.3.0"
+version = "1.4.0"
 description = "Local, graph-aware semantic search over linked markdown — Obsidian vaults, OKF bundles, any docs tree. CLI + MCP server."
 readme = "README.md"
 requires-python = ">=3.11"

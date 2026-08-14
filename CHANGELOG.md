@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v1.4.0 (2026-08-14)
+
+### Features
+
+- Install the CLI as okf-search alongside obsidian-rag
+  ([`6e5b402`](https://github.com/proofsh/obsidian-notes-rag/commit/6e5b402e8e1edc3e5b0f766e6763e82569334e2b))
+
+The tool is the retrieval engine for OKF knowledge bundles as much as for Obsidian vaults; the alias
+  names the function without renaming the package. Same entry point, same behavior.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01GAFiWzgBHE96jXW4EmGvRV
+
+
 ## v1.3.0 (2026-08-14)
 
 ### Features
