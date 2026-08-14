@@ -112,6 +112,10 @@ obsidian-rag index --path-filter "Daily Notes/"  # index subset
 # Info
 obsidian-rag stats                            # show index size
 
+# Second collections (e.g. a project's docs bundle) — pass both flags on every command
+obsidian-rag --vault ~/proj/internal --data ~/rag-data/proj index
+obsidian-rag --vault ~/proj/internal --data ~/rag-data/proj search "query" -e 1
+
 # Services
 obsidian-rag serve                            # start MCP server
 obsidian-rag watch                            # watch for changes, auto-reindex

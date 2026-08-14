@@ -38,12 +38,16 @@ def _note_preview(store: VectorStore, path: str, max_len: int = 200) -> str:
     content = chunks[0]["content"]
     return content[:max_len] + "..." if len(content) > max_len else content
 
-# Default configuration
-DEFAULT_VAULT = "/Users/ernestkoe/Documents/Brave Robot"
-DEFAULT_DATA = "/Users/ernestkoe/Projects/obsidian-notes-rag/data"
-DEFAULT_PROVIDER = "openai"
-DEFAULT_OLLAMA_URL = "http://localhost:11434"
-DEFAULT_LMSTUDIO_URL = "http://localhost:1234"
+def _require_vault(ctx) -> str:
+    """Return the configured vault path or exit with guidance."""
+    vault = ctx.obj["vault"]
+    if not vault:
+        click.echo(
+            "No vault configured. Run 'obsidian-rag setup' or pass --vault.",
+            err=True,
+        )
+        sys.exit(1)
+    return vault
 
 
 @click.group()
@@ -69,7 +73,7 @@ def main(ctx, vault, data, provider, ollama_url, lmstudio_url, ollama_api_key, l
     # Load config from file, then apply CLI overrides
     config = load_config()
 
-    ctx.obj["vault"] = vault or config.vault_path or DEFAULT_VAULT
+    ctx.obj["vault"] = vault or config.vault_path
     ctx.obj["data"] = data or config.get_data_path()
     ctx.obj["provider"] = provider or config.provider
     ctx.obj["ollama_url"] = ollama_url or config.ollama_url
@@ -360,7 +364,7 @@ def setup():
 @click.pass_context
 def index(ctx, clear, path_filter):
     """Index all markdown files in the vault."""
-    vault_path = ctx.obj["vault"]
+    vault_path = _require_vault(ctx)
     data_path = ctx.obj["data"]
     provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
@@ -760,7 +764,7 @@ def stats(ctx):
 @click.pass_context
 def watch(ctx, debounce):
     """Watch vault for changes and auto-reindex."""
-    vault_path = ctx.obj["vault"]
+    vault_path = _require_vault(ctx)
     data_path = ctx.obj["data"]
     provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
@@ -904,7 +908,7 @@ def install_service(ctx):
         click.echo("Error: This command currently only supports macOS. Linux/Windows support planned.", err=True)
         sys.exit(1)
 
-    vault_path = ctx.obj["vault"]
+    vault_path = _require_vault(ctx)
     data_path = ctx.obj["data"]
     provider = ctx.obj["provider"]
     ollama_url = ctx.obj["ollama_url"]
