@@ -32,6 +32,7 @@ Issues = "https://github.com/proofgeist/obsidian-notes-rag/issues"
 [project.scripts]
 obsidian-notes-rag = "obsidian_rag.cli:main"
 obsidian-rag = "obsidian_rag.cli:main"
+okf-search = "obsidian_rag.cli:main"
 
 [tool.obsidian-rag]
 vault_path = "/Users/ernestkoe/Documents/Brave Robot"
