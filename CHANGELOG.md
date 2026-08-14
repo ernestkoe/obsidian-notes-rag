@@ -1,6 +1,26 @@
 # CHANGELOG
 
 
+## v1.3.0 (2026-08-14)
+
+### Features
+
+- De-obsidian the engine — type rules and --root alias
+  ([`a059131`](https://github.com/proofsh/obsidian-notes-rag/commit/a0591316592604add9d85f392af8283c8c49f636))
+
+The indexer works on any folder of linked markdown, not just Obsidian vaults. This makes the
+  remaining vault assumptions configurable:
+
+- note type mapping is now [indexer.type_rules] in config.toml (path-prefix -> type, longest prefix
+  wins); the old hardcoded "Daily Notes/" -> daily rule is the preserved default - --root is
+  accepted as an alias for --vault - packaging copy says what the tool actually is: local,
+  graph-aware semantic search over linked markdown (vaults, OKF bundles, docs trees)
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01GAFiWzgBHE96jXW4EmGvRV
+
+
 ## v1.2.1 (2026-08-14)
 
 ### Bug Fixes
