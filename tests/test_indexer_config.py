@@ -223,3 +223,34 @@ class TestChunkMarkdownWithConfig:
         content = "---\ntags: [test]\n---\n"
         chunks = chunk_markdown(content, "test.md", config=IndexerConfig(preset="math"))
         assert chunks == []
+
+
+class TestTypeRules:
+    def test_default_daily_notes_rule(self):
+        chunks = chunk_markdown("# Standup\n\nNotes here.", "Daily Notes/2026-08-13.md")
+        assert chunks[0].metadata["type"] == "daily"
+
+    def test_default_fallback_is_note(self):
+        chunks = chunk_markdown("# Concept\n\nBody.", "notes/concept.md")
+        assert chunks[0].metadata["type"] == "note"
+
+    def test_custom_rules_override(self):
+        cfg = IndexerConfig(type_rules={"meetings/": "meeting"})
+        chunks = chunk_markdown("# Kickoff\n\nBody.", "meetings/kickoff.md", config=cfg)
+        assert chunks[0].metadata["type"] == "meeting"
+        # Default rule is replaced, not merged
+        daily = chunk_markdown("# D\n\nBody.", "Daily Notes/x.md", config=cfg)
+        assert daily[0].metadata["type"] == "note"
+
+    def test_longest_prefix_wins(self):
+        cfg = IndexerConfig(type_rules={"internal/": "doc", "internal/notes/": "concept"})
+        concept = chunk_markdown("# C\n\nBody.", "internal/notes/a.md", config=cfg)
+        doc = chunk_markdown("# P\n\nBody.", "internal/plans/b.md", config=cfg)
+        assert concept[0].metadata["type"] == "concept"
+        assert doc[0].metadata["type"] == "doc"
+
+    def test_toml_roundtrip(self):
+        cfg = IndexerConfig.from_dict({"type_rules": {"meetings/": "meeting"}})
+        assert cfg.type_rules == {"meetings/": "meeting"}
+        assert IndexerConfig().to_dict().get("type_rules") is None  # default omitted
+        assert cfg.to_dict()["type_rules"] == {"meetings/": "meeting"}

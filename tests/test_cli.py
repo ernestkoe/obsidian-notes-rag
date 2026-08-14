@@ -72,3 +72,12 @@ class TestContextCommand:
             assert result.exit_code == 0
             assert "Note content here" in result.output
             assert "related.md" in result.output
+
+
+class TestRootAlias:
+    def test_root_is_accepted_as_vault_alias(self, tmp_path):
+        runner = CliRunner()
+        result = runner.invoke(
+            main, ["--root", str(tmp_path), "--data", str(tmp_path), "stats"]
+        )
+        assert result.exit_code == 0, result.output

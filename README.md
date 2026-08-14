@@ -3,7 +3,7 @@
 
 # obsidian-notes-rag
 
-MCP server and CLI for semantic search over your Obsidian vault. Generates embeddings with OpenAI, Ollama, or LM Studio. Stores vectors locally in sqlite-vec (~200KB, no telemetry, no network calls).
+MCP server and CLI for semantic search over your Obsidian vault — or any folder of linked markdown: an OKF knowledge bundle, a repo's docs tree, a wiki export. Generates embeddings with OpenAI, Ollama, or LM Studio. Stores vectors locally in sqlite-vec (~200KB, no telemetry, no network calls). Nothing requires Obsidian itself: point `--root` at any markdown directory and both the semantic index and the link graph work the same.
 
 ## What it does
 

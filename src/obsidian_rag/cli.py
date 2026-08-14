@@ -51,7 +51,8 @@ def _require_vault(ctx) -> str:
 
 
 @click.group()
-@click.option("--vault", default=None, help="Path to Obsidian vault")
+@click.option("--vault", "--root", "vault", default=None,
+              help="Path to the notes root — an Obsidian vault, an OKF bundle, or any folder of markdown")
 @click.option("--data", default=None, help="Path to vector store data")
 @click.option("--provider", default=None,
               type=click.Choice(["openai", "ollama", "lmstudio"]),

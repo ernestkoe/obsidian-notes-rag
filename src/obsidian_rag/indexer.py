@@ -40,6 +40,10 @@ class IndexerConfig:
     default_similar_limit: int = 5
     default_context_limit: int = 5
     extra_exclude_patterns: List[str] = field(default_factory=list)
+    # Path-prefix -> note type, matched longest-prefix-first; unmatched files
+    # are type "note". The default preserves the original Obsidian-vault
+    # convention; any corpus can override it in [indexer.type_rules].
+    type_rules: Dict[str, str] = field(default_factory=lambda: {"Daily Notes/": "daily"})
 
     def __post_init__(self):
         if self.preset != "default":
@@ -62,6 +66,7 @@ class IndexerConfig:
         defaults.default_similar_limit = 5
         defaults.default_context_limit = 5
         defaults.extra_exclude_patterns = []
+        defaults.type_rules = {"Daily Notes/": "daily"}
 
         for k, v in presets.items():
             if getattr(self, k) == getattr(defaults, k):
@@ -82,6 +87,7 @@ class IndexerConfig:
         base.default_similar_limit = 5
         base.default_context_limit = 5
         base.extra_exclude_patterns = []
+        base.type_rules = {"Daily Notes/": "daily"}
         if self.preset in _PRESETS:
             for k, v in _PRESETS[self.preset].items():
                 setattr(base, k, v)
@@ -111,7 +117,7 @@ _SERIALIZABLE_FIELDS = [
     "heading_split_depth", "preserve_latex_blocks", "preserve_code_blocks",
     "similarity_threshold",
     "default_search_limit", "default_similar_limit", "default_context_limit",
-    "extra_exclude_patterns",
+    "extra_exclude_patterns", "type_rules",
 ]
 
 _PRESETS: Dict[str, Dict] = {
@@ -280,7 +286,13 @@ def chunk_markdown(
     )
     chonkie_chunks = chunker.chunk(protected_body)
 
-    note_type = "daily" if file_path.startswith("Daily Notes/") else "note"
+    note_type = "note"
+    for prefix, mapped_type in sorted(
+        cfg.type_rules.items(), key=lambda kv: len(kv[0]), reverse=True
+    ):
+        if file_path.startswith(prefix):
+            note_type = mapped_type
+            break
 
     chunks = []
     for i, cc in enumerate(chonkie_chunks):
