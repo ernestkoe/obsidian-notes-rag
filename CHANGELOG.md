@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.2.1 (2026-08-14)
+
+### Bug Fixes
+
+- Fail with guidance when no vault is configured
+  ([`0ef1c6d`](https://github.com/proofsh/obsidian-notes-rag/commit/0ef1c6d8f88f503834d834cc5f87753447281d87))
+
+The CLI shipped a hardcoded personal path as the vault fallback, so on any machine without a config,
+  index/watch/install-service silently targeted a directory that doesn't exist. Vault-requiring
+  commands now exit with a pointer to 'obsidian-rag setup' instead. Also removes the other dead
+  default constants and documents second-collection usage.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
+Claude-Session: https://claude.ai/code/session_01GAFiWzgBHE96jXW4EmGvRV
+
+
 ## v1.2.0 (2026-08-13)
 
 ### Features
